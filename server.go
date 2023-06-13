@@ -8,24 +8,38 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/gorilla/sessions"
+	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
 )
 
+type User struct {
+	ID       string
+	Name     string
+	Password string
+}
+
 func main() {
 	// echoのサーバーのインスタンス？を作成
 	e := echo.New()
+	// ! secretはランダムな値に
+	e.Use(session.Middleware(sessions.NewCookieStore([]byte("secret"))))
+
 	// エンドポイント
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Hello Echo")
 	})
 	e.POST("/signup", signUp)
+	e.POST("/signin", signIn)
+
 	e.Logger.Fatal(e.Start(":1323"))
 }
 
@@ -65,5 +79,55 @@ func signUp(c echo.Context) error {
 		log.Fatalf("同じ名前のユーザーが既に存在します: %v", err)
 	}
 
-	return c.JSON(http.StatusOK, uuid)
+	// sessionの作成
+	session, _ := session.Get("session", c)
+	session.Values["username"] = name
+	session.Save(c.Request(), c.Response())
+
+	return c.String(http.StatusOK, "ユーザー登録が完了しました")
+}
+
+func signIn(c echo.Context) error {
+	// name, passwordを受け取る
+	name := c.FormValue("name")
+	password := c.FormValue("password")
+
+	db, err := sql.Open("sqlite3", "./mydb.db")
+	if err != nil {
+		log.Fatalf("DBに接続できませんでした err:%v", err)
+	}
+	defer db.Close()
+
+	// DBにnameと同じユーザーがいるか見る
+	rows, err := db.Query("SELECT id, name, password FROM users WHERE name = ?", name)
+	if err != nil {
+		log.Fatalf("DBに同じnameを持つユーザーがいませんでした err:%v", err)
+	}
+
+	// ? errがなければDBに存在していると思う
+	u := &User{}
+	for rows.Next() {
+		// ! ここでエラーが出ている
+		if err := rows.Scan(&u.ID, &u.Name, &u.Password); err != nil {
+			log.Fatalf("getRows rows.Scan error err:%v", err)
+		}
+		fmt.Println(u)
+	}
+
+	fmt.Println(u.ID)
+	fmt.Println(u.Name)
+	fmt.Println(u.Password)
+
+	// passwordがあっているか検証
+	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
+	if err != nil {
+		log.Fatalf("passwordが間違っている err:%v", err)
+	}
+
+	// session
+	session, _ := session.Get("session", c)
+	session.Values["username"] = name
+	session.Save(c.Request(), c.Response())
+
+	return c.String(http.StatusOK, "ログインしました")
 }
