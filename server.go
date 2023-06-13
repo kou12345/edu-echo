@@ -60,9 +60,9 @@ func signUp(c echo.Context) error {
 	uuid := strings.Replace(uuidWithHyphen.String(), "-", "", -1)
 
 	// DBに保存
-	res, err := db.Exec("INSERT INTO users (id, name, password) VALUES (?, ?, ?)", uuid, name, hash)
+	_, err = db.Exec("INSERT INTO users (id, name, password) VALUES (?, ?, ?)", uuid, name, hash)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("同じ名前のユーザーが既に存在します: %v", err)
 	}
 
 	return c.JSON(http.StatusOK, uuid)
