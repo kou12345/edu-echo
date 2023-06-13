@@ -107,7 +107,6 @@ func signIn(c echo.Context) error {
 	// ? errがなければDBに存在していると思う
 	u := &User{}
 	for rows.Next() {
-		// ! ここでエラーが出ている
 		if err := rows.Scan(&u.ID, &u.Name, &u.Password); err != nil {
 			log.Fatalf("getRows rows.Scan error err:%v", err)
 		}
