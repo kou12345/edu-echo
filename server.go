@@ -1,11 +1,5 @@
 package main
 
-// import (
-// 	"database/sql"
-// 	"log"
-
-// )
-
 import (
 	"database/sql"
 	"fmt"
@@ -39,6 +33,8 @@ func main() {
 	})
 	e.POST("/signup", signUp)
 	e.POST("/signin", signIn)
+	e.GET("/protectedEndpoint", protectedEndpoint)
+	e.GET("/signout", signOut)
 
 	e.Logger.Fatal(e.Start(":1323"))
 }
@@ -56,7 +52,7 @@ func signUp(c echo.Context) error {
 	// TODO 少なすぎる文字数の場合エラーにしたい
 	password := c.FormValue("password")
 
-	// TODO 同じnameのuserがいないか検証
+	// 同じnameのuserがいないか検証
 	// rows, err := db.Query("SELECT name FROM users WHERE name = ?", name)
 	// if err != nil {
 	// 	log.Fatal(err)
@@ -137,3 +133,29 @@ func signIn(c echo.Context) error {
 
 	return c.String(http.StatusOK, "ログインしました")
 }
+
+func protectedEndpoint(c echo.Context) error {
+	// sessionから値を取得
+	session, _ := session.Get("session", c)
+	name, ok := session.Values["username"]
+	if !ok {
+		return echo.NewHTTPError(http.StatusInternalServerError)
+	}
+	fmt.Println(name)
+
+	// ログイン状態か検証
+	return c.String(http.StatusOK, "認証ok")
+}
+
+func signOut(c echo.Context) error {
+	// sessionからデータを消す
+	session, _ := session.Get("session", c)
+	session.Options.MaxAge = -1
+	session.Save(c.Request(), c.Response())
+
+	return c.String(http.StatusOK, "SignOutしました")
+}
+
+// TODO sessionの有効期限を設定
+
+// ? middlewareとは
