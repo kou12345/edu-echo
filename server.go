@@ -98,9 +98,6 @@ func signIn(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "passwordが入力されていません")
 	}
 
-	// TODO name, passwordが入力されていなくてもエラーになっていない
-	
-
 	db, err := sql.Open("sqlite3", "./mydb.db")
 	if err != nil {
 		log.Fatalf("DBに接続できませんでした err:%v", err)
