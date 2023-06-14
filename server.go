@@ -90,7 +90,16 @@ func signUp(c echo.Context) error {
 func signIn(c echo.Context) error {
 	// name, passwordを受け取る
 	name := c.FormValue("name")
+	if name == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "nameが入力されていません")
+	}
 	password := c.FormValue("password")
+	if name == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "passwordが入力されていません")
+	}
+
+	// TODO name, passwordが入力されていなくてもエラーになっていない
+	
 
 	db, err := sql.Open("sqlite3", "./mydb.db")
 	if err != nil {
