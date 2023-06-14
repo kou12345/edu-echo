@@ -120,7 +120,8 @@ func signIn(c echo.Context) error {
 	// passwordがあっているか検証
 	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 	if err != nil {
-		log.Fatalf("passwordが間違っている err:%v", err)
+		// log.Fatalf("passwordが間違っている err:%v", err)
+		return echo.NewHTTPError(http.StatusUnauthorized, "パスワードが間違っています")
 	}
 
 	// session
